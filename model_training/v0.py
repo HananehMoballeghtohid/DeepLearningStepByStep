@@ -1,4 +1,3 @@
-
 epochs = 1000
 for epoch in range(epochs):
     model.train()
