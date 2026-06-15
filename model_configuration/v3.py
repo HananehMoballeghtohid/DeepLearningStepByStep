@@ -1,0 +1,21 @@
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
+lr = 0.01
+
+torch.manual_seed(0)
+
+model = nn.Sequential(nn.Linear(1, 1)).to(device)
+
+loss_function = nn.MSELoss(reduction='mean')
+
+optimizer = optim.SGD(model.parameters(), lr=lr)
+
+# This will be used in the training loop
+train_step_function = make_train_step_fn(model, loss_function, optimizer)
+
+# This will be used for validation
+val_step_function = make_val_step_fn(model, loss_function)
+
+writer = SummaryWriter('runs/simple_linear_regression')
+x_dummy, y_dummy = next(iter(train_loader))
+writer.add_graph(model, x_dummy.to(device))
