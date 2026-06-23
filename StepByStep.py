@@ -1,6 +1,8 @@
+import random
 import datetime
 import torch
 import numpy as np
+
 from torch.utils.tensorboard import SummaryWriter
 import matplotlib.pyplot as plt
 
@@ -93,12 +95,19 @@ class StepByStep(object):
         torch.backends.cudnn.benchmark = False
         torch.manual_seed(seed)
         np.random.seed(seed)
+        random.seed(seed)
+        try:
+            self.train_loader.sampler.generator.manual_seed(seed)
+        except AttributeError:
+            pass
 
     def train(self, n_epochs, seed=0):
         self.set_seed(seed)
         for epoch in range(n_epochs):
 
             self.total_epochs += 1
+            if (self.total_epochs % 10 == 0):
+                print(f'Running epoch num {self.total_epochs}/{n_epochs}')
             loss = self._mini_batch(validation=False)
             self.losses.append(loss)
 
