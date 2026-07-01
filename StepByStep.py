@@ -171,3 +171,63 @@ class StepByStep(object):
         if self.train_loader and self.writer:
             x_dummy, y_dummy = next(iter(self.train_loader))
             self.writer.add_graph(self.model, x_dummy.to(self.device))
+
+    @staticmethod
+    def _visualize_tensors(axs, x, y=None, yhat=None,
+        layer_name='', title=None):
+        n_images = len(axs)
+        minv, maxv = np.min(x[:n_images]), np.max(x[:n_images])
+        
+        for j, image in enumerate(x[:n_images]):
+            ax = axs[j]
+            if title is not None:
+                ax.set_title(f'{title} #{j}', fontsize=12)
+            shp = np.atleast_2d(image).shape
+            ax.set_ylabel(
+                f'{layer_name}\n{shp[0]}x{shp[1]}',
+                rotation=0, labelpad=40
+            )
+            xlabel1 = '' if y is None else f'\nLabel: {y[j]}'
+            xlabel2 = '' if yhat is None else f'\nPredicted: {yhat[j]}'
+            xlabel = f'{xlabel1}{xlabel2}'
+            if len(xlabel):
+                ax.set_xlabel(xlabel, fontsize=12)
+            ax.set_xticks([])
+            ax.set_yticks([])
+            
+            # Plots weight as an image
+            ax.imshow(
+                np.atleast_2d(image.squeeze()),
+                cmap='gray',
+                vmin=minv,
+                vmax=maxv
+            )
+        return
+
+    def visualize_filters(self, layer_name, **kwargs):
+        try:
+            layer = self.model
+            for name in layer_name.split('.'):
+                layer = getattr(layer, name)
+            if isinstance(layer, nn.Conv2d):
+                weights = layer.weight.data.cpu().numpy()
+                n_filters, n_channels, _, _ = weights.shape
+                size = (2 * n_channels + 2, 2 * n_filters)
+                fig, axes = plt.subplots(n_filters, n_channels,
+                figsize=size)
+                axes = np.atleast_2d(axes)
+                axes = axes.reshape(n_filters, n_channels)
+                for i in range(n_filters):
+                    StepByStep._visualize_tensors(
+                        axes[i, :],
+                        weights[i],
+                        layer_name=f'Filter #{i}',
+                        title='Channel'
+                    )
+                for ax in axes.flat:
+                    ax.label_outer()
+                    
+                fig.tight_layout()
+                return fig
+        except AttributeError:
+            return
